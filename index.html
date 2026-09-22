@@ -615,6 +615,71 @@
     });
   }
 </script>
-<audio src="clair-de-lune.mp3" autoplay loop></audio>
+<audio id="bgMusic" src="clair-de-lune.mp3" loop playsinline preload="auto"></audio>
+<button id="musicToggle" aria-label="Play music" title="Play music" style="
+  position:fixed;
+  right:16px;
+  bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  z-index:999;
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  border:1px solid var(--gold);
+  background:var(--maroon-deep);
+  color:var(--gold);
+  font-size:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,0,0,.35);
+">🔇</button>
+<script>
+(function(){
+  var audio = document.getElementById('bgMusic');
+  var btn = document.getElementById('musicToggle');
+  var started = false;
+
+  function updateIcon(){
+    btn.textContent = (audio.paused) ? '🔇' : '🔊';
+    btn.setAttribute('aria-label', audio.paused ? 'Play music' : 'Pause music');
+  }
+
+  function tryAutoStart(){
+    if (started) return;
+    var p = audio.play();
+    if (p && typeof p.then === 'function') {
+      p.then(function(){ started = true; updateIcon(); })
+       .catch(function(){ /* blocked until a real tap happens */ });
+    }
+  }
+
+  // Attempt autoplay right away (works on some desktop browsers).
+  tryAutoStart();
+
+  // Most mobile browsers require an actual user gesture before audio
+  // can play. Listen once for the first tap/click/keypress anywhere on
+  // the page and start the music then, so it feels automatic to the guest.
+  ['touchend','click','keydown'].forEach(function(evt){
+    document.addEventListener(evt, function firstGesture(){
+      if (!started) tryAutoStart();
+    }, { once: true, passive: true });
+  });
+
+  // Manual toggle button, in case a guest wants to mute/unmute.
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    if (audio.paused) {
+      audio.play().then(function(){ started = true; updateIcon(); }).catch(function(){});
+    } else {
+      audio.pause();
+      updateIcon();
+    }
+  });
+
+  audio.addEventListener('play', updateIcon);
+  audio.addEventListener('pause', updateIcon);
+})();
+</script>
 </body>
 </html>
